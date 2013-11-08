@@ -1,0 +1,18 @@
+﻿<Window x:Class="filean.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity" 
+        xmlns:cal="http://www.caliburnproject.org"
+        Title="filean" Height="350" Width="525">
+    <StackPanel>
+        <Label Content="Directory"></Label>
+        <TextBox x:Name="Directory" Text="."></TextBox>
+        <TextBox x:Name="DirectoryInfo"></TextBox>
+        <Label Content="Filter" ></Label>
+        <TextBox x:Name="Filter" Text="*.*"></TextBox>
+        <Button x:Name="Start" Content="Start" Click="Start_Click"></Button>
+        <Button x:Name="Clean" Content="Clean"></Button>
+        <Label Content="Files"></Label>
+        <ListView x:Name="Files"></ListView>
+    </StackPanel>
+</Window>
