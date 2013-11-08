@@ -22,17 +22,24 @@ namespace filean
 	/// </summary>
 	public partial class MainWindow : Window
 	{
-		private const int MaxItems = 100;
-		private ActionBlock<FileSystemEventArgs> _fileChanged;
-		private ActionBlock<RenamedEventArgs> _fileRenamed;
-		private ActionBlock<ErrorEventArgs> _fileError;
+		private const int MaxItems = 1000;
+		private TransformBlock<FileSystemEventArgs, int> _fileChanged;
+		private TransformBlock<RenamedEventArgs, int> _fileRenamed;
+		private TransformBlock<ErrorEventArgs, int> _fileError;
+		private ActionBlock<int> _removeFirst;
 
 		public MainWindow()
 		{
 			InitializeComponent();
-			_fileChanged = new ActionBlock<FileSystemEventArgs>(args => OnChanged(args));
-			_fileRenamed = new ActionBlock<RenamedEventArgs>(args => OnRenamed(args));
-			_fileError = new ActionBlock<ErrorEventArgs>(args => OnError(args));
+			_fileChanged = new TransformBlock<FileSystemEventArgs, int>(args => OnChanged(args));
+			_fileRenamed = new TransformBlock<RenamedEventArgs, int>(args => OnRenamed(args));
+			_fileError = new TransformBlock<ErrorEventArgs, int>(args => OnError(args));
+
+			_removeFirst = new ActionBlock<int>(i => Dispatcher.InvokeAsync(() => { if (i > MaxItems) Files.Items.RemoveAt(MaxItems); }));
+
+			_fileChanged.LinkTo(_removeFirst);
+			_fileRenamed.LinkTo(_removeFirst);
+			_fileError.LinkTo(_removeFirst);
 		}
 
 		private void Start_Click(object sender, RoutedEventArgs e)
@@ -63,36 +70,28 @@ namespace filean
 
 		}
 
-		private void OnRenamed(RenamedEventArgs renamedArgs)
+		private int OnRenamed(RenamedEventArgs renamedArgs)
 		{
-			Dispatcher.InvokeAsync(() =>
-				{
-					Files.Items.Insert(0, new {Message = string.Format("{2} \tRenamed:\t{0} -> {1}", renamedArgs.OldName, renamedArgs.Name, DateTime.Now.TimeOfDay)});
-					if(Files.Items.Count > MaxItems) Files.Items.RemoveAt(MaxItems);
-				});
+			int count = Files.Items.Count;
+			Dispatcher.InvokeAsync(() => Files.Items.Insert(0, new {Message = string.Format("{2} \tRenamed:\t{0} -> {1}", renamedArgs.OldName, renamedArgs.Name, DateTime.Now.TimeOfDay)}));
+			return count;
 		}
 
-		private void OnError(ErrorEventArgs errorEventArgs)
+		private int OnError(ErrorEventArgs errorEventArgs)
 		{
-			Dispatcher.InvokeAsync(() =>
-				{
-					Files.Items.Insert(0, new {Message = string.Format("{1} \t{0}", errorEventArgs.GetException().Message, DateTime.Now.TimeOfDay)});
-					if (Files.Items.Count > MaxItems) Files.Items.RemoveAt(MaxItems);
-
-				});
+			int count = Files.Items.Count;
+			Dispatcher.InvokeAsync(() => Files.Items.Insert(0, new {Message = string.Format("{1} \t{0}", errorEventArgs.GetException().Message, DateTime.Now.TimeOfDay)}));
+			return count;
 		}
 
-		private void OnChanged(FileSystemEventArgs eventArgs)
+		private int OnChanged(FileSystemEventArgs eventArgs)
 		{
+			int count = Files.Items.Count;
 			//if (eventArgs.ChangeType == WatcherChangeTypes.Created) Console.ForegroundColor = ConsoleColor.Green;
 			//if (eventArgs.ChangeType == WatcherChangeTypes.Changed) Console.ForegroundColor = ConsoleColor.Blue;
 			//if (eventArgs.ChangeType == WatcherChangeTypes.Deleted) Console.ForegroundColor = ConsoleColor.Red;
-			Dispatcher.InvokeAsync(() =>
-				{
-					Files.Items.Insert(0, new {Message = string.Format("{2} \t{0}:\t{1}", eventArgs.ChangeType, eventArgs.Name, DateTime.Now.TimeOfDay)});
-					if (Files.Items.Count > MaxItems) Files.Items.RemoveAt(MaxItems);
-
-				});
+			Dispatcher.InvokeAsync(() => Files.Items.Insert(0, new {Message = string.Format("{2} \t{0}:\t{1}", eventArgs.ChangeType, eventArgs.Name, DateTime.Now.TimeOfDay)}));
+			return count;
 		}
 	}
 }
